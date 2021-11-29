@@ -1,1 +1,102 @@
 
+# -------------------Client Side---------------------
+
+import socket
+import pickle
+import time
+header=20
+import threading
+
+client=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+#ip_adr="10.0.2.15"  
+
+#Inorder to run it in local ide,ip should be local host
+ip_adr = "127.0.0.1"
+port=5400
+bind=(ip_adr,port)
+Format="utf-8"
+client.connect(bind)
+print(socket.gethostbyname(socket.gethostname()))
+
+def recv_msg():
+    msg_len=client.recv(header).decode(Format)
+    msg=client.recv(int(msg_len)).decode(Format)
+    print(msg)
+    print("------>data received")
+    recv_msg()
+
+def send_msg():
+    data=str(input())
+    data_len=str(len(data))
+    data_len=data_len.encode(Format)
+    data_len+=b' '*(header-len(data_len))
+    client.send(data_len)
+    data=data.encode(Format)
+    client.send(data)
+    print(f"------>The data was send to server: {ip_adr}")
+    send_msg()
+print("connected")
+
+#while True:
+if __name__=="__main__":
+    try:
+        thread_send_data = threading.Thread(target=send_msg)
+        thread_rec_data = threading.Thread(target=recv_msg)
+        thread_send_data.start()
+        #time.sleep(10)
+        thread_rec_data.start()
+    except:
+        print("some error")
+    #break
+
+
+#client.close()
+
+# -------------------Server Side---------------------
+import socket
+import pickle
+import time
+import threading
+header =20
+
+
+server=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+#ip_adr= "10.0.2.15"
+
+#Inorder to run it in local ide,ip should be local host
+ip_adr = "127.0.0.1"
+print(ip_adr)
+port=5400
+bind=(ip_adr,port)
+Format='utf-8'
+
+server.bind(bind)
+server.listen(3)
+#server.setblocking(1)
+def send_msg(conn_obj,client_address):
+    data=str(input())
+    data_len=str(len(data))
+    data_len=data_len.encode(Format)
+    data_len+=b' '*(header-len(data_len))
+    conn_obj.send(data_len)
+    data=data.encode(Format)
+    conn_obj.send(data)
+    print(f"----->The data was send to {client_address}")
+    send_msg(conn_obj,client_address)
+
+def recv_msg(conn_obj,addr):
+    msg_len = conn_obj.recv(header).decode(Format)
+    msg = conn_obj.recv(int(msg_len)).decode(Format)
+    print(msg)
+    print(f"------>data is received to {addr}")
+    recv_msg(conn_obj,addr)
+
+if __name__=="__main__":
+    while True:
+        print("waiting for connection...!")
+        conn_obj,client_address=server.accept()
+        thread_send_data = threading.Thread(target=send_msg,args=(conn_obj,client_address))
+        thread_rec_data = threading.Thread(target=recv_msg,args=(conn_obj,client_address))
+        thread_send_data.start()
+        thread_rec_data.start()
+        print(f"object:{conn_obj}address:{client_address}connected")
